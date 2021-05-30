@@ -1,0 +1,104 @@
+---
+title: "Motor Trend, Regression Models Course Project"
+author: "Irina White"
+date: "29/05/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+This model has been constructed to answer the two key questions using regression models and exploratory data analyses:
+*Is an automatic or manual transmission better for MPG?*
+*Quantify the MPG difference between automatic and manual transmissions?*
+
+## Summary
+For the purpose of this analysis the data set **mtcars** has been used with the variable MPG as a desired outcome and the key am variable as a regressor,with additional regressors added to the multivariable regression analysis.
+
+The findings suggest that manual transmission tends to result in more mileage (as a result of the single variable t-test), further analysis based on quantifying the difference between transmission with additional regressors, leads to the conclusion that other factors affecting mileage along with the type of the trasmission are weight(wt), gross horsepowers(hp), and number of cylinders (cyl). 
+
+
+```{r cars}
+head(mtcars, 8)
+```
+
+As it can be observed from the quick overview of the data, the following variables can be used as factors (categorical data): cyl(4,6,8), gear(3,4,5), carb(1,2,3,4,6,8), vs (0,1) and am (0,1).
+```{r}
+#convert continuous variables into categoricals in data set mtcarsf
+mtcarsf<-mtcars
+cols <- c("cyl", "vs", "am", "gear",'carb')
+mtcarsf[cols] <- lapply(mtcarsf[cols], factor)
+```
+
+# *Is an automatic or manual transmission better for MPG?*
+
+The simple T-test is to be used to asses the influence of the transmission on mileage.
+The variable that represents transmission is **am** (0 = automatic, 1 = manual)
+
+Without taking into account other variables the T-test fails to support the null hypothesis that there is no significant difference between Automatic or Manual transmission effect on mpg. 
+
+```{r}
+t.test(mtcars$mpg~mtcars$am)
+
+```
+The outcome suggests that **manual transmission results in higher mileage**. (p =0.0014, automatic mean = 17.1 miles, manual mean = 24.4 miles). The boxplot can be found in Appendix section.
+
+# *Quantify the MPG difference between automatic and manual transmissions?*
+
+## 1. Correlation
+
+Brief correlation analysis shows that mpg has higher level of correlation with wt, cyl, disp, and hp.
+However wt and disp is highly correlated between each other therefore one should be omitted to avoid 
+``` {r}
+round(cor(mtcars, use='everything', method='pearson'),2)
+```
+## 2. Variance Inflation Factor (library 'car')
+```{r, warning=FALSE}
+library(car)
+```
+
+
+```{r}
+fit1<-lm(mpg~am+wt+hp+cyl+disp, mtcars)
+fit2<-lm(mpg~am+wt+hp+cyl, mtcars)
+fit3<-lm(mpg~am+wt+hp, mtcars)
+fit4<-lm(mpg~am+wt, mtcars)
+fit5<-lm(mpg~am, mtcars)
+round(rbind(vif(fit1), c(vif(fit2),0), c(vif(fit3),0,0), c(vif(fit4),0,0,0)),3)
+
+```
+VIF analysis shows that disposition has a very high correlation rate, as soon as the variable is omitted from the analysis, the relative importance of correlated variables is excluded as well and the VIF rates are moderate.
+
+## 3. Linear Regression Model Simple vs Multivariable
+Therefore it is worth to consider two models:
+- first the one variable model that includes only am
+- multivariable model that includes: am, wt, hp and cyl
+```{r}
+summary(fit5)
+
+```
+The cars with the automatic transmission has on average 17.15mpg, and the cars with the manual transmission result in 17.15+7.24= 24.49mpg, the p-value <0.05, the adj.r.squared is 33.9% thus covers almost 34% of variance.
+
+```{r}
+summary(fit2)
+```
+Multivariable model explains almost 93% of variance, which is significant improvement from the 1st model.
+
+## 4.ANOVA TEST
+``` {r}
+anova(fit5, fit2)
+```
+The result of the anove test confirms significance of the multivariance model and reject the uni-variable model where only am is considered and rest of the variables are omitted.
+
+# Appendix
+
+```{r, out.width = "70%"}
+plot(mtcarsf$mpg~mtcarsf$am, main='MPG vs Transmission (0= manual, 1=automatic)', xlab='Transmission', ylab='mpg')
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit2)
+```
